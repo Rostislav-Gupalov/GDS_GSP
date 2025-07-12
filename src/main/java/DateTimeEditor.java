@@ -36,13 +36,13 @@ public class DateTimeEditor extends DefaultCellEditor {
 
     @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-        if (value != null) {
+        if (value != null && !value.toString().isEmpty()) {
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat("HH:00 dd/MM/yyyy");
                 Date date = sdf.parse(value.toString());
                 datePicker.setDate(date);
                 timeSpinner.setValue(date);
-            } catch (ParseException e) {
+            } catch (Exception e) {
                 datePicker.setDate(new Date());
                 timeSpinner.setValue(new Date());
             }

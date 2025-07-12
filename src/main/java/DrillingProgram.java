@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -19,11 +20,11 @@ public class DrillingProgram extends JFrame {
 
     public DrillingProgram() {
         setTitle("Программа бурения");
-        setSize(800, 400);
+        setSize(1000, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Модель таблицы
+        // Инициализация модели (если она ещё не создана)
         if (drillingModel == null) {
             String[] columns = {"Наименование этапа", "Начало этапа", "Конец этапа", "Длительность этапа"};
             drillingModel = new DefaultTableModel(columns, 0) {
@@ -32,67 +33,46 @@ public class DrillingProgram extends JFrame {
                     return column != 3; // Запрещаем редактирование столбца "Длительность"
                 }
             };
-                drillingTable = new JTable(drillingModel);
-                JScrollPane scrollPane = new JScrollPane(drillingTable);
+            drillingTable = new JTable(drillingModel);
+            JScrollPane scrollPane = new JScrollPane(drillingTable);
+            add(scrollPane, BorderLayout.CENTER);
 
-                add(scrollPane, BorderLayout.CENTER);
-            drillingTable.getColumnModel().
+            //Настройка редакторов для столбцов с датой
+            drillingTable.getColumnModel().getColumn(1).setCellEditor(new DateTimeEditor()); // Для "Начало этапа"
+            drillingTable.getColumnModel().getColumn(2).setCellEditor(new DateTimeEditor()); // Для "Конец этапа"
 
-                getColumn(1).
+            //Инициализация списка этапов
+            updateDrillingStages();
 
-                setCellEditor(new DateTimeEditor()); // Для "Начало этапа"
-            drillingTable.getColumnModel().
+            // Кнопка добавления этапа
+            addButton = new JButton("Добавить этап");
+            addButton.addActionListener(this::addNewRow);
 
-                getColumn(2).
+            // Кнопка перехода к таблице "Материалы
+            JButton nextButton = new JButton("Перейти к таблице \"Материалы\"");
+            nextButton.addActionListener(e -> openMaterialsTable());
 
-                setCellEditor(new DateTimeEditor()); // Для "Конец этапа"
+            // Панель с двумя кнопками
+            JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
+            buttonPanel.add(addButton);
+            buttonPanel.add(nextButton);
+            add(buttonPanel, BorderLayout.SOUTH);
 
-                //Инициализация списка этапов
-                updateDrillingStages();
-
-                // Кнопка добавления этапа
-// Старая кнопка
-                addButton =new
-
-                JButton("Добавить этап");
-        addButton.addActionListener(e ->
-
-                addNewRow());
-
-                // Новая кнопка перехода
-                JButton nextButton = new JButton("Перейти к таблице \"Материалы\"");
-        nextButton.addActionListener(e ->
-
-                openMaterialsTable());
-
-                // Панель с двумя кнопками
-                JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
-        buttonPanel.add(addButton);
-        buttonPanel.add(nextButton);
-
-                add(buttonPanel, BorderLayout.SOUTH);
-
-                // Валидация данных при редактировании
-        drillingTable.getModel().
-
-                addTableModelListener(e ->
-
-                {
-                    if (e.getColumn() == 1 || e.getColumn() == 2) {
-                        validateDates(e.getFirstRow());
-                    }
-                });
-            }
+            // Валидация данных при редактировании
+            drillingModel.addTableModelListener(e ->
+            {
+                if (e.getColumn() == 1 || e.getColumn() == 2) {
+                    validateDates(e.getFirstRow());
+                }
+            });
         }
+    }
 
-
-
-
-    private void addNewRow() {
+    private void addNewRow(ActionEvent e) {
         int selectedRow = drillingTable.getSelectedRow();
         int insertRow = (selectedRow == -1) ? drillingModel.getRowCount() : selectedRow + 1;
 
-        // 1. Определяем значение для "Начало этапа"
+        // 1. Автозаполнение даты начала из предыдущей строки
         String startDate = "";
         if (insertRow > 0) {  // Если есть предыдущая строка
             Object prevEndDate = drillingModel.getValueAt(insertRow - 1, 2);  // Берем "Конец этапа" из предыдущей строки
@@ -134,7 +114,7 @@ public class DrillingProgram extends JFrame {
         }
     }
 
-    /*private void openMaterialsTable() {
+    private void openMaterialsTable() {
         if (drillingStages.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "Добавьте хотя бы один этап бурения!",
@@ -142,11 +122,11 @@ public class DrillingProgram extends JFrame {
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
-
+        this.setVisible(false);
         new MaterialsTable(drillingStages).setVisible(true);
-        this.dispose(); // Закрываем текущее окно
-    }*/
-    private void openMaterialsTable() {
+        //this.dispose(); // Закрываем текущее окно
+    }
+    /*private void openMaterialsTable() {
         List<String> stages = new ArrayList<>();
         for (int i = 0; i < drillingModel.getRowCount(); i++) {
             stages.add(drillingModel.getValueAt(i, 0).toString());
@@ -154,7 +134,7 @@ public class DrillingProgram extends JFrame {
 
         this.setVisible(false); // Скрываем текущее окно вместо dispose()
         new MaterialsTable(stages).setVisible(true);
-    }
+    }*/
 
     public static void returnToDrillingTable() {
         // Показываем окно бурения снова
@@ -163,10 +143,10 @@ public class DrillingProgram extends JFrame {
     }
 
     private void validateDates(int row) {
-        Date endDate = null;
-        Date startDate = null;
+        //Date endDate = null;
+        //Date startDate = null;
         try {
-            // 1. Получаем значения из модели (уже в формате "HH:00 dd/MM/yyyy")
+            /*// 1. Получаем значения из модели (уже в формате "HH:00 dd/MM/yyyy")
             Object startValue = drillingModel.getValueAt(row, 1);
             Object endValue = drillingModel.getValueAt(row, 2);
 
@@ -174,39 +154,37 @@ public class DrillingProgram extends JFrame {
             if (startValue == null || endValue == null ||
                     startValue.toString().isEmpty() || endValue.toString().isEmpty()) {
                 return;
-            }
+            }*/
 
-            // 3. Парсим даты (формат остался прежним)
+            // 1. Парсим даты (формат остался прежним)
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm dd/MM/yyyy");
-            startDate = sdf.parse(drillingModel.getValueAt(row, 1).toString());
-            endDate = sdf.parse(drillingModel.getValueAt(row, 2).toString());
+            Date startDate = sdf.parse(drillingModel.getValueAt(row, 1).toString());
+            Date endDate = sdf.parse(drillingModel.getValueAt(row, 2).toString());
 
-            // 4. Существующие проверки (без изменений)
+            // 2. Существующие проверки (без изменений)
             if (startDate.after(endDate)) {
                 JOptionPane.showMessageDialog(this, "Ошибка: Начало этапа не может быть позже конца этапа!", "Ошибка", JOptionPane.ERROR_MESSAGE);
                 drillingModel.setValueAt("", row, 2);
                 return;
             }
 
-            // 5. Проверка пересечения с другими этапами (без изменений)
+            // 3.Расчет длительности с минутами
+            long durationMillis = endDate.getTime() - startDate.getTime();
+            long days = durationMillis / (1000 * 60 * 60 * 24);
+            long hours = (durationMillis % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
+            long minutes = (durationMillis % (1000 * 60 * 60)) / (1000 * 60);
+            drillingModel.setValueAt(days + " суток " + hours + " часов " + minutes + " минут", row, 3);
+
+            // 4. Проверка пересечения с другими этапами (без изменений)
             if (row < drillingModel.getRowCount() - 1) {
-                // ... существующий код ...
+                Date nextStartDate = sdf.parse(drillingModel.getValueAt(row + 1, 1).toString());
+                if (endDate.after(nextStartDate)) {
+                    JOptionPane.showMessageDialog(this, "Ошибка: Следующий этап не может начинаться раньше текущего!", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                    drillingModel.setValueAt("", row, 2);
+                }
             }
-
-        } catch (ParseException e) {
-            // Логируем ошибку, если нужно
-            System.err.println("Ошибка парсинга даты: " + e.getMessage());
+        } catch (Exception ex) {
+            // Игнорируем ошибки парсинга
         }
-
-        // Расчет длительности с минутами
-        long durationMillis = endDate.getTime() - startDate.getTime();
-        long days = durationMillis / (1000 * 60 * 60 * 24);
-        long hours = (durationMillis % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
-        long minutes = (durationMillis % (1000 * 60 * 60)) / (1000 * 60);
-        drillingModel.setValueAt(days + " суток " + hours + " часов " + minutes + " минут", row, 3);
-
     }
-        //} catch (ParseException | ) {
-            // Игнорируем незаполненные поля
-        }
-
+}
