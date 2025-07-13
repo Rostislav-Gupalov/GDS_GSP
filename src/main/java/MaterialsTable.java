@@ -7,20 +7,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MaterialsTable extends JFrame {
-    private JTable materialsTable;
-    private DefaultTableModel materialsModel;
-    private List<String> drillingStages;
-
     public MaterialsTable(List<String> stages) {
-        this.drillingStages = stages;
+        initComponents(stages);
+    }
+
+    private void initComponents(List<String> stages) {
         setTitle("Таблица материалов");
         setSize(1500, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        initComponents();
-    }
-    private void initComponents() {
+
         //  1. Создаём модель со столбцами
-        //if (DrillingProgram.materialsModel == null) {
+        if (DrillingProgram.materialsModel == null) {
             String[] columns = {
                     "Наименование этапа",                   //0
                     "Наименование материала",               //1
@@ -36,17 +33,18 @@ public class MaterialsTable extends JFrame {
             };
 
             // 2. Инициализируем модель (если она еще не создана)
-            materialsModel = new DefaultTableModel(columns, 0) {
+            DrillingProgram.materialsModel = new DefaultTableModel(columns, 0) {
                 @Override
                 public boolean isCellEditable(int row, int column) {
                     // Блокируем вычисляемые столбцы
                     return column != 7 && column != 8;
                 }
             };
+        }
 
         // 3. Создаем таблицу с моделью
-        materialsTable = new JTable(materialsModel);
-        setupCellEditors();
+        JTable materialsTable = new JTable(DrillingProgram.materialsModel);
+        setupCellEditors(materialsTable, stages);
 
         // 4. Настройка интерфейса
         JScrollPane scrollPane = new JScrollPane(materialsTable);
@@ -70,7 +68,7 @@ public class MaterialsTable extends JFrame {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private void setupCellEditors() {
+    private void setupCellEditors(JTable materialsTable, List<String> stages) {
         // 1. Проверяем, что столбцы существуют
         if (materialsTable.getColumnCount() == 0) {
             System.err.println("Ошибка: таблица не содержит столбцов!");
@@ -88,7 +86,7 @@ public class MaterialsTable extends JFrame {
 
             // 1. Комбобокс для этапов бурения (столбец 0)
             //if (stageCol < materialsTable.getColumnCount()) {
-            JComboBox<String> stageCombo = new JComboBox<>(drillingStages.toArray(new String[0]));
+            JComboBox<String> stageCombo = new JComboBox<>(stages.toArray(new String[0]));
             materialsTable.getColumnModel().getColumn(0).setCellEditor(
                     //new DefaultCellEditor(new JComboBox<>(drillingStages.toArray(new String[0]))));
                     new DefaultCellEditor(stageCombo));
@@ -114,7 +112,7 @@ public class MaterialsTable extends JFrame {
                     new DefaultCellEditor(storageCombo));
 
             // Слушатель изменений для автоматических расчетов
-            materialsModel.addTableModelListener(e -> {
+            DrillingProgram.materialsModel.addTableModelListener(e -> {
                 if (e.getColumn() == 4 || e.getColumn() == 5 || e.getColumn() == 6) {
                     calculateTotals(e.getFirstRow());
                 }
@@ -127,14 +125,14 @@ public class MaterialsTable extends JFrame {
 
     private void calculateTotals(int row) {
         try {
-            String materialType = (String) materialsModel.getValueAt(row, 2);
+            String materialType = (String) DrillingProgram.materialsModel.getValueAt(row, 2);
             if ("В таре".equals(materialType)) {
-                double volume = Double.parseDouble(materialsModel.getValueAt(row, 4).toString());
-                double area = Double.parseDouble(materialsModel.getValueAt(row, 5).toString());
-                int count = Integer.parseInt(materialsModel.getValueAt(row, 6).toString());
+                double volume = Double.parseDouble(DrillingProgram.materialsModel.getValueAt(row, 4).toString());
+                double area = Double.parseDouble(DrillingProgram.materialsModel.getValueAt(row, 5).toString());
+                int count = Integer.parseInt(DrillingProgram.materialsModel.getValueAt(row, 6).toString());
 
-                materialsModel.setValueAt(volume * count, row, 7); //Общий объём
-                materialsModel.setValueAt(area * count, row, 8); // Общая площадь
+                DrillingProgram.materialsModel.setValueAt(volume * count, row, 7); //Общий объём
+                DrillingProgram.materialsModel.setValueAt(area * count, row, 8); // Общая площадь
             }
         } catch (Exception ignored) {
             //Игнорирование ошибок парсинга
@@ -143,8 +141,8 @@ public class MaterialsTable extends JFrame {
 
     private void addMaterialRow() {
         //Добавляем строку с значениями по умолчанию
-        materialsModel.addRow(new Object[]{
-                drillingStages.isEmpty() ? "" : drillingStages.get(0), // Первый этап по умолчанию
+        DrillingProgram.materialsModel.addRow(new Object[]{
+                DrillingProgram.drillingStages.isEmpty() ? "" : DrillingProgram.drillingStages.get(0), // !!! Сделал drillingStages публичным и статичным. Первый этап по умолчанию
                 "",         //Наименование материала
                 "Сыпучий",  //Вид материала
                 0.0,        //Требуемый объём

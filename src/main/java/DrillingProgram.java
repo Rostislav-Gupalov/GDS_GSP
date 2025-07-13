@@ -1,24 +1,26 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.text.ParseException;
+import java.awt.event.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import javax.swing.JButton;
-import javax.swing.JPanel;
-import java.awt.GridLayout;
 
 public class DrillingProgram extends JFrame {
     private JTable drillingTable;
     private DefaultTableModel drillingModel;
     public static DefaultTableModel materialsModel;
     private JButton addButton;
-    private List<String> drillingStages = new ArrayList<>();
+    public static List<String> drillingStages = new ArrayList<>();
+    private static DrillingProgram instance;
 
     public DrillingProgram() {
+        instance = this;
+        initComponents();
+    }
+
+    private void initComponents() {
         setTitle("Программа бурения");
         setSize(1000, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -137,9 +139,11 @@ public class DrillingProgram extends JFrame {
     }*/
 
     public static void returnToDrillingTable() {
-        // Показываем окно бурения снова
-        DrillingProgram app = new DrillingProgram();
-        app.setVisible(true);
+        if (instance != null) {
+            instance.setVisible(true);
+        } else {
+            new DrillingProgram().setVisible(true);
+        }
     }
 
     private void validateDates(int row) {
