@@ -6,14 +6,30 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Vector;
 
 public class DrillingProgram extends JFrame {
     private JTable drillingTable;
-    private DefaultTableModel drillingModel;
+    private static DefaultTableModel drillingModel;
     public static DefaultTableModel materialsModel;
     private JButton addButton;
     public static List<String> drillingStages = new ArrayList<>();
     private static DrillingProgram instance;
+
+    public static Vector<String> getDrillingStagesVector() {
+        Vector<String> stages = new Vector<>();
+        for (int i = 0; i < drillingModel.getRowCount(); i++) {
+            String stageName = drillingModel.getValueAt(i, 0).toString();
+            if (!stageName.trim().isEmpty() && !"Новый этап".equals(stageName)) {
+                stages.add(stageName);
+            }
+        }
+        return stages;
+    }
+
+    public static List<String> getDrillingStages() {
+        return new ArrayList<>(getDrillingStagesVector());
+    }
 
     public DrillingProgram() {
         instance = this;
@@ -61,14 +77,22 @@ public class DrillingProgram extends JFrame {
             add(buttonPanel, BorderLayout.SOUTH);
 
             // Валидация данных при редактировании
-            drillingModel.addTableModelListener(e ->
-            {
-                if (e.getColumn() == 1 || e.getColumn() == 2) {
-                    validateDates(e.getFirstRow());
+            drillingModel.addTableModelListener(e -> {
+                //Проверяем изменения в столбце "Наименование этапа"
+                if (e.getColumn()==0) {
+                    String value = drillingModel.getValueAt(e.getFirstRow(), 0).toString();
+                    if (value.trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(this,
+                                "Название этапа не может быть пстым!",
+                                "Ошибка", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
-            });
+                    if (e.getColumn() == 1 || e.getColumn() == 2) {
+                        validateDates(e.getFirstRow());
+                    }
+                });
+            }
         }
-    }
 
     private void addNewRow(ActionEvent e) {
         int selectedRow = drillingTable.getSelectedRow();
@@ -85,7 +109,7 @@ public class DrillingProgram extends JFrame {
 
         // 2. Вставляем новую строку с предзаполненным началом
         drillingModel.insertRow(insertRow, new Object[]{
-                "Новый этап",
+                "",
                 startDate,  // Начало = концу предыдущего этапа
                 "",         // Конец пока пустой
                 ""          // Длительность пустая
@@ -97,22 +121,26 @@ public class DrillingProgram extends JFrame {
         // 4. Выделяем новую строку
         drillingTable.setRowSelectionInterval(insertRow, insertRow);
 
-        // 5. Автоматически открываем редактор для даты окончания
-        if (!startDate.isEmpty()) {
+        // 5. Автоматически открываем редактор для даты окончания (UPD: "... для имени этапа")
             SwingUtilities.invokeLater(() -> {
-                drillingTable.editCellAt(insertRow, 2);  // Фокус на столбец "Конец этапа"
-                Component editor = drillingTable.getEditorComponent();
+                drillingTable.editCellAt(insertRow, 0);  // Фокус на столбец "Конец этапа" (UPD: "... на столбец "Наименовние этапа")
+                /*Component editor = drillingTable.getEditorComponent();
                 if (editor != null) {
                     editor.requestFocusInWindow();
-                }
+                }*/
+                drillingTable.getEditorComponent().requestFocus();
             });
         }
-    }
 
     private void updateDrillingStages() {
         drillingStages.clear();
         for (int i = 0; i < drillingModel.getRowCount(); i++) {
-            drillingStages.add(drillingModel.getValueAt(i, 0).toString());
+            String stageName = drillingModel.getValueAt(i, 0).toString();
+            //Исключаем "Новый этап" из списка
+            if (!"Новый этап".equals(stageName)) {
+                drillingStages.add(stageName);
+            }
+
         }
     }
 
